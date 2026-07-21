@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Message;
+use App\Models\WebhookLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -35,6 +36,11 @@ class WhatsAppWebhookController extends Controller
      */
     public function receive(Request $request)
     {
+        // Save the raw webhook payload
+        WebhookLog::create([
+            'payload' => json_encode($request->all(), JSON_PRETTY_PRINT),
+        ]);
+
         Log::info('Incoming WhatsApp webhook', [
             'payload' => $request->all(),
         ]);
