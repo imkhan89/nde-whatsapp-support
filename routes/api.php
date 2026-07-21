@@ -24,3 +24,11 @@ Route::post('/whatsapp/test', [WhatsAppController::class, 'test']);
 Route::get('/whatsapp/webhook', [WhatsAppWebhookController::class, 'verify']);
 
 Route::post('/whatsapp/webhook', [WhatsAppWebhookController::class, 'receive']);
+
+Route::get('/debug/environment', function () {
+    return [
+        'app_env' => app()->environment(),
+        'db_connection' => config('database.default'),
+        'database' => config('database.connections.' . config('database.default') . '.database'),
+    ];
+});
