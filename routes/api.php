@@ -32,3 +32,15 @@ Route::get('/debug/environment', function () {
         'database' => config('database.connections.' . config('database.default') . '.database'),
     ];
 });
+
+use App\Models\WebhookLog;
+use App\Models\Message;
+use App\Models\Customer;
+
+Route::get('/debug/db', function () {
+    return [
+        'customers' => Customer::count(),
+        'messages' => Message::count(),
+        'webhook_logs' => WebhookLog::count(),
+    ];
+});
