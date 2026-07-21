@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
+use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -35,6 +37,37 @@ class WhatsAppWebhookController extends Controller
     {
         Log::info('Incoming WhatsApp webhook', [
             'payload' => $request->all(),
+        ]);
+
+        $value = data_get($request->all(), 'entry.0.changes.0.value');
+
+        // Ignore status updates or empty webhook events
+        if (!$value || empty($value['messages'])) {
+            return response()->json([
+                'success' => true,
+            ]);
+        }
+
+        $waMessage = $value['messages'][0];
+        $contact = $value['contacts'][0] ?? [];
+
+        $customer = Customer::firstOrCreate(
+            [
+                'phone' => $waMessage['from'],
+            ],
+            [
+                'first_name' => data_get($contact, 'profile.name', 'WhatsApp User'),
+                'last_name' => '',
+                'email' => null,
+                'shopify_customer_id' => null,
+            ]
+        );
+
+        Message::create([
+            'customer_id'   => $customer->id,
+            'wa_message_id' => $waMessage['id'],
+            'direction'     => 'incoming',
+            'message'       => data_get($waMessage, 'text.body', ''),
         ]);
 
         return response()->json([
