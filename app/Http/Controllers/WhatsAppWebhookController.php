@@ -12,14 +12,30 @@ class WhatsAppWebhookController extends Controller
      */
    public function verify(Request $request)
 {
-    return response()->json([
-        'all' => $request->all(),
+    Log::info('Webhook verification request', [
         'query' => $request->query(),
-        'hub.mode' => $request->query('hub.mode'),
-        'hub_mode' => $request->query('hub_mode'),
-        'hub.verify_token' => $request->query('hub.verify_token'),
-        'hub_verify_token' => $request->query('hub_verify_token'),
-        'config_verify_token' => config('whatsapp.verify_token'),
+        'all' => $request->all(),
+        'headers' => $request->headers->all(),
     ]);
-}
+
+    $mode = $request->query('hub_mode') ?? $request->query('hub.mode');
+    $token = $request->query('hub_verify_token') ?? $request->query('hub.verify_token');
+    $challenge = $request->query('hub_challenge') ?? $request->query('hub.challenge');
+
+    Log::info('Parsed verification values', [
+        'mode' => $mode,
+        'token' => $token,
+        'expected' => config('whatsapp.verify_token'),
+        'challenge' => $challenge,
+    ]);
+
+    if (
+        $mode === 'subscribe' &&
+        $token === config('whatsapp.verify_token')
+    ) {
+        return response($challenge, 200)
+            ->header('Content-Type', 'text/plain');
+    }
+
+    return response('Forbidden', 403);
 }
