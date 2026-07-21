@@ -41,8 +41,15 @@ class WhatsAppWebhookController extends Controller
 
         $value = data_get($request->all(), 'entry.0.changes.0.value');
 
-        // Ignore status updates or empty webhook events
+        Log::info('Parsed WhatsApp value', [
+            'value' => $value,
+        ]);
+
         if (!$value || empty($value['messages'])) {
+            Log::info('No messages found in webhook', [
+                'keys' => is_array($value) ? array_keys($value) : [],
+            ]);
+
             return response()->json([
                 'success' => true,
             ]);
@@ -68,6 +75,11 @@ class WhatsAppWebhookController extends Controller
             'wa_message_id' => $waMessage['id'],
             'direction'     => 'incoming',
             'message'       => data_get($waMessage, 'text.body', ''),
+        ]);
+
+        Log::info('Message saved successfully', [
+            'customer_id' => $customer->id,
+            'message_id' => $waMessage['id'],
         ]);
 
         return response()->json([
