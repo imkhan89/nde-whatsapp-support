@@ -56,3 +56,15 @@ Route::get('/debug/webhook-table', function () {
 Route::get('/debug/last-webhook', function () {
     return WebhookLog::latest()->first();
 });
+
+Route::get('/debug/create-webhook-log', function () {
+
+    $log = \App\Models\WebhookLog::create([
+        'payload' => 'Manual Test',
+    ]);
+
+    return [
+        'success' => true,
+        'id' => $log->id,
+    ];
+});
