@@ -36,10 +36,23 @@ class WhatsAppWebhookController extends Controller
      */
     public function receive(Request $request)
     {
-        // Save the raw webhook payload
-        WebhookLog::create([
-            'payload' => json_encode($request->all(), JSON_PRETTY_PRINT),
-        ]);
+        // Try saving the raw webhook payload
+        try {
+            $log = WebhookLog::create([
+                'payload' => json_encode($request->all(), JSON_PRETTY_PRINT),
+            ]);
+
+            Log::info('WebhookLog created successfully', [
+                'id' => $log->id,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'error'   => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ], 500);
+        }
 
         Log::info('Incoming WhatsApp webhook', [
             'payload' => $request->all(),
@@ -85,7 +98,7 @@ class WhatsAppWebhookController extends Controller
 
         Log::info('Message saved successfully', [
             'customer_id' => $customer->id,
-            'message_id' => $waMessage['id'],
+            'message_id'  => $waMessage['id'],
         ]);
 
         return response()->json([
