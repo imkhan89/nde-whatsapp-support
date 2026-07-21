@@ -15,7 +15,6 @@ class WhatsAppWebhookController extends Controller
      */
     public function verify(Request $request)
     {
-        // PHP converts dots in query parameters to underscores.
         $mode = $request->query('hub_mode', $request->query('hub.mode'));
         $token = $request->query('hub_verify_token', $request->query('hub.verify_token'));
         $challenge = $request->query('hub_challenge', $request->query('hub.challenge'));
@@ -36,73 +35,56 @@ class WhatsAppWebhookController extends Controller
      */
     public function receive(Request $request)
     {
-        // Try saving the raw webhook payload
         try {
-            $log = WebhookLog::create([
+            // Store the raw payload for future troubleshooting
+            WebhookLog::create([
                 'payload' => json_encode($request->all(), JSON_PRETTY_PRINT),
             ]);
 
-            Log::info('WebhookLog created successfully', [
-                'id' => $log->id,
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'error'   => $e->getMessage(),
-                'file'    => $e->getFile(),
-                'line'    => $e->getLine(),
-            ], 500);
-        }
+            $value = data_get($request->all(), 'entry.0.changes.0.value');
 
-        Log::info('Incoming WhatsApp webhook', [
-            'payload' => $request->all(),
-        ]);
+            if (!$value || empty($value['messages'])) {
+                return response()->json([
+                    'success' => true,
+                ]);
+            }
 
-        $value = data_get($request->all(), 'entry.0.changes.0.value');
+            $waMessage = $value['messages'][0];
+            $contact = $value['contacts'][0] ?? [];
 
-        Log::info('Parsed WhatsApp value', [
-            'value' => $value,
-        ]);
+            $customer = Customer::firstOrCreate(
+                [
+                    'phone' => $waMessage['from'],
+                ],
+                [
+                    'first_name' => data_get($contact, 'profile.name', 'WhatsApp User'),
+                    'last_name' => '',
+                    'email' => null,
+                    'shopify_customer_id' => null,
+                ]
+            );
 
-        if (!$value || empty($value['messages'])) {
-            Log::info('No messages found in webhook', [
-                'keys' => is_array($value) ? array_keys($value) : [],
+            Message::create([
+                'customer_id'   => $customer->id,
+                'wa_message_id' => $waMessage['id'],
+                'direction'     => 'incoming',
+                'message'       => data_get($waMessage, 'text.body', ''),
             ]);
 
             return response()->json([
                 'success' => true,
             ]);
+        } catch (\Throwable $e) {
+
+            Log::error('WhatsApp webhook failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+            ], 500);
         }
-
-        $waMessage = $value['messages'][0];
-        $contact = $value['contacts'][0] ?? [];
-
-        $customer = Customer::firstOrCreate(
-            [
-                'phone' => $waMessage['from'],
-            ],
-            [
-                'first_name' => data_get($contact, 'profile.name', 'WhatsApp User'),
-                'last_name' => '',
-                'email' => null,
-                'shopify_customer_id' => null,
-            ]
-        );
-
-        Message::create([
-            'customer_id'   => $customer->id,
-            'wa_message_id' => $waMessage['id'],
-            'direction'     => 'incoming',
-            'message'       => data_get($waMessage, 'text.body', ''),
-        ]);
-
-        Log::info('Message saved successfully', [
-            'customer_id' => $customer->id,
-            'message_id'  => $waMessage['id'],
-        ]);
-
-        return response()->json([
-            'success' => true,
-        ]);
     }
 }
