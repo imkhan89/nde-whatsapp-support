@@ -71,7 +71,6 @@ body{
 .messages{
     flex:1;
     overflow-y:auto;
-    overflow-x:hidden;
     padding:20px;
     scroll-behavior:smooth;
 }
@@ -115,6 +114,35 @@ body{
     margin-top:6px;
     font-size:11px;
     color:#777;
+    display:flex;
+    justify-content:flex-end;
+    gap:5px;
+}
+
+
+.status{
+    font-size:13px;
+    font-weight:bold;
+}
+
+
+.status.sent{
+    color:#777;
+}
+
+
+.status.delivered{
+    color:#777;
+}
+
+
+.status.read{
+    color:#2196f3;
+}
+
+
+.status.failed{
+    color:#dc3545;
 }
 
 
@@ -137,8 +165,6 @@ body{
 <div class="row">
 
 
-<!-- Customer Sidebar -->
-
 <div class="col-md-3 sidebar">
 
 
@@ -149,7 +175,6 @@ Customers
 
 @foreach($customers as $item)
 
-
 <a
 href="{{ route('support.show',$item->id) }}"
 class="customer {{ isset($customer) && $customer->id == $item->id ? 'active' : '' }}"
@@ -157,9 +182,7 @@ class="customer {{ isset($customer) && $customer->id == $item->id ? 'active' : '
 
 
 <strong>
-
 {{ $item->first_name ?: 'WhatsApp User' }}
-
 </strong>
 
 
@@ -167,18 +190,14 @@ class="customer {{ isset($customer) && $customer->id == $item->id ? 'active' : '
 
 
 <small>
-
 {{ $item->phone }}
-
 </small>
 
 
 @if($item->unread_count > 0)
 
 <span class="badge bg-primary float-end">
-
 {{ $item->unread_count }}
-
 </span>
 
 @endif
@@ -206,9 +225,7 @@ class="customer {{ isset($customer) && $customer->id == $item->id ? 'active' : '
 
 </div>
 
-
 @endif
-
 
 
 </a>
@@ -221,9 +238,6 @@ class="customer {{ isset($customer) && $customer->id == $item->id ? 'active' : '
 
 
 
-<!-- Chat Area -->
-
-
 <div class="col-md-9 p-0">
 
 
@@ -234,7 +248,6 @@ class="customer {{ isset($customer) && $customer->id == $item->id ? 'active' : '
 
 
 <div class="chat-header">
-
 
 <h5 class="mb-1">
 
@@ -249,9 +262,7 @@ class="customer {{ isset($customer) && $customer->id == $item->id ? 'active' : '
 
 </small>
 
-
 </div>
-
 
 
 
@@ -272,7 +283,41 @@ class="customer {{ isset($customer) && $customer->id == $item->id ? 'active' : '
 
 <div class="time">
 
+
+<span>
 {{ $message->created_at->format('d M Y H:i') }}
+</span>
+
+
+
+@if($message->direction === 'outgoing')
+
+
+<span class="status {{ $message->status }}">
+
+@if($message->status === 'read')
+
+✓✓
+
+@elseif($message->status === 'delivered')
+
+✓✓
+
+@elseif($message->status === 'sent')
+
+✓
+
+@elseif($message->status === 'failed')
+
+!
+
+@endif
+
+</span>
+
+
+@endif
+
 
 </div>
 
@@ -302,7 +347,6 @@ No conversation yet.
 
 
 <div class="composer">
-
 
 
 @if(session('success'))
@@ -346,12 +390,9 @@ action="{{ route('support.reply.ajax', $customer->id) }}"
 <div class="input-group">
 
 
-
 <input
 
 id="messageInput"
-
-autocomplete="off"
 
 type="text"
 
@@ -371,7 +412,6 @@ maxlength="4096"
 
 
 
-
 <button
 
 id="sendButton"
@@ -385,7 +425,6 @@ type="submit"
 Send
 
 </button>
-
 
 
 </div>
@@ -405,12 +444,10 @@ Send
 @else
 
 
-
 <div
 class="d-flex justify-content-center align-items-center"
 style="height:100vh;"
 >
-
 
 <h3 class="text-muted">
 
@@ -418,13 +455,10 @@ Select a customer
 
 </h3>
 
-
 </div>
 
 
-
 @endif
-
 
 
 </div>
