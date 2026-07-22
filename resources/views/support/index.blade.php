@@ -1,322 +1,486 @@
-document.addEventListener("DOMContentLoaded", function () {
+<!DOCTYPE html>
+<html lang="en">
 
-    console.log("NDE WhatsApp Support JS Loaded");
+<head>
 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    const customerId = window.supportCustomerId;
+<title>NDE WhatsApp Support</title>
 
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
-    const form = document.getElementById("replyForm");
-    const input = document.getElementById("messageInput");
-    const button = document.getElementById("sendButton");
-    const messagesBox = document.getElementById("messages");
+@vite(['resources/js/support.js'])
 
 
-    if (!messagesBox) {
-        return;
-    }
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 
+<style>
 
-    function scrollBottom(){
+body{
+    margin:0;
+    background:#ece5dd;
+    font-family:Arial, Helvetica, sans-serif;
+}
 
-        messagesBox.scrollTop =
-            messagesBox.scrollHeight;
 
-    }
+.container-fluid{
+    height:100vh;
+}
 
 
-    scrollBottom();
+.sidebar{
+    height:100vh;
+    overflow-y:auto;
+    border-right:1px solid #ddd;
+    background:#fff;
+}
 
 
+.customer{
+    display:block;
+    padding:15px;
+    border-bottom:1px solid #eee;
+    text-decoration:none;
+    color:#222;
+}
 
-    /*
-    |--------------------------------------------------------------------------
-    | Send Message
-    |--------------------------------------------------------------------------
-    */
 
+.customer:hover{
+    background:#f7f7f7;
+}
 
-    if(form){
 
-        form.addEventListener(
-            "submit",
-            async function(e){
+.customer.active{
+    background:#e8f5e9;
+}
 
-                e.preventDefault();
 
+.chat-wrapper{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+}
 
-                let message =
-                    input.value.trim();
 
+.chat-header{
+    background:#fff;
+    border-bottom:1px solid #ddd;
+    padding:18px;
+}
 
-                if(!message){
-                    return;
-                }
 
+.messages{
+    flex:1;
+    overflow-y:auto;
+    padding:20px;
+    scroll-behavior:smooth;
+}
 
-                button.disabled=true;
-                button.innerText="Sending...";
 
+.message-row{
+    display:flex;
+    margin-bottom:12px;
+}
 
-                let formData =
-                    new FormData();
 
+.message-row.incoming{
+    justify-content:flex-start;
+}
 
-                formData.append(
-                    "message",
-                    message
-                );
 
+.message-row.outgoing{
+    justify-content:flex-end;
+}
 
-                try{
 
+.bubble{
+    max-width:70%;
+    padding:12px;
+    border-radius:10px;
+    box-shadow:0 1px 2px rgba(0,0,0,.15);
+}
 
-                    let response =
-                        await fetch(
-                            form.action,
-                            {
 
-                                method:"POST",
+.incoming .bubble{
+    background:#fff;
+}
 
-                                headers:{
 
-                                    "X-CSRF-TOKEN":
-                                    document
-                                    .querySelector(
-                                        'meta[name="csrf-token"]'
-                                    )
-                                    .content,
+.outgoing .bubble{
+    background:#dcf8c6;
+}
 
-                                    "Accept":
-                                    "application/json"
 
-                                },
+.time{
+    margin-top:6px;
+    font-size:11px;
+    color:#777;
+    display:flex;
+    justify-content:flex-end;
+    gap:5px;
+}
 
-                                body:formData
 
-                            }
-                        );
+.status{
+    font-size:13px;
+    font-weight:bold;
+}
 
 
-                    let data =
-                        await response.json();
+.composer{
 
+    background:#fff;
+    border-top:1px solid #ddd;
+    padding:15px;
 
+}
 
-                    if(data.success){
 
+</style>
 
-                        addMessage(
-                            data.message
-                        );
+</head>
 
 
-                        input.value="";
+<body>
 
-                        scrollBottom();
 
+<div class="container-fluid">
 
-                    }
-                    else{
+<div class="row">
 
-                        alert(
-                            data.error ??
-                            "Message failed"
-                        );
 
-                    }
+<div class="col-md-3 sidebar">
 
 
-                }
-                catch(error){
+<h4 class="p-3 bg-success text-white mb-0">
+Customers
+</h4>
 
-                    console.error(error);
 
-                    alert(
-                        "Unable to send message"
-                    );
 
-                }
+@foreach($customers as $item)
 
 
-                button.disabled=false;
-                button.innerText="Send";
+<a
 
+href="{{ route('support.show',$item->id) }}"
 
-            }
-        );
+class="customer {{ isset($customer) && $customer->id == $item->id ? 'active' : '' }}"
 
-    }
+>
 
 
+<strong>
 
+{{ $item->first_name ?: 'WhatsApp User' }}
 
-    /*
-    |--------------------------------------------------------------------------
-    | Auto Refresh Incoming Messages
-    |--------------------------------------------------------------------------
-    */
+</strong>
 
 
-    let lastMessageId = 0;
+<br>
 
 
-    setInterval(
-        async function(){
+<small>
 
+{{ $item->phone }}
 
-            if(!customerId){
-                return;
-            }
+</small>
 
 
 
-            try{
+@if($item->unread_count > 0)
 
+<span class="badge bg-primary float-end">
 
-                let response =
-                    await fetch(
-                        `/api/support/${customerId}/messages`,
-                        {
-                            headers:{
-                                "Accept":
-                                "application/json"
-                            }
-                        }
-                    );
+{{ $item->unread_count }}
 
+</span>
 
-                let data =
-                    await response.json();
+@endif
 
 
 
-                if(
-                    data.success &&
-                    data.messages.length
-                ){
 
+@if($item->messages->count())
 
-                    data.messages.forEach(
-                        function(message){
 
+<div class="text-muted small mt-2">
 
-                            if(
-                                message.id >
-                                lastMessageId
-                            ){
+{{ Str::limit(
+$item->messages->first()->message,
+35
+) }}
 
+</div>
 
-                                if(
-                                    !document
-                                    .querySelector(
-                                    `[data-message-id="${message.id}"]`
-                                    )
-                                ){
 
-                                    addMessage(message);
+<div class="text-muted small">
 
-                                }
+{{ $item->messages->first()->created_at->diffForHumans() }}
 
+</div>
 
-                                lastMessageId =
-                                    message.id;
 
+@endif
 
-                            }
 
 
-                        }
-                    );
+</a>
 
 
-                    scrollBottom();
+@endforeach
 
-                }
 
 
+</div>
 
-            }
-            catch(error){
 
-                console.error(
-                    "Polling error:",
-                    error
-                );
 
-            }
 
+<div class="col-md-9 p-0">
 
-        },
-        5000
-    );
 
+@if(isset($customer))
 
 
+<div class="chat-wrapper">
 
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Add Message
-    |--------------------------------------------------------------------------
-    */
+<div class="chat-header">
 
 
-    function addMessage(message){
+<h5 class="mb-1">
 
+{{ $customer->first_name ?: 'WhatsApp User' }}
 
-        let row =
-            document.createElement("div");
+</h5>
 
 
-        row.className =
-            "message-row " +
-            message.direction;
+<small>
 
+{{ $customer->phone }}
 
-        row.dataset.messageId =
-            message.id;
+</small>
 
 
+</div>
 
-        row.innerHTML = `
 
-        <div class="bubble">
 
-            ${escapeHtml(message.message)}
 
-            <div class="time">
 
-                ${message.created_at}
+<div id="messages" class="messages">
 
-            </div>
 
-        </div>
 
-        `;
+@forelse($messages as $message)
 
 
-        messagesBox.appendChild(row);
+<div
 
+class="message-row {{ $message->direction }}"
 
-    }
+data-message-id="{{ $message->id }}"
 
+>
 
 
+<div class="bubble">
 
-    function escapeHtml(text){
 
-        let div =
-            document.createElement("div");
+{{ $message->message }}
 
-        div.innerText=text;
 
-        return div.innerHTML;
 
-    }
+<div class="time">
 
 
+<span>
 
-});
+{{ $message->created_at->format('d M Y H:i') }}
+
+</span>
+
+
+
+@if($message->direction === 'outgoing')
+
+
+<span class="status {{ $message->status }}">
+
+
+@if($message->status === 'read')
+
+✓✓
+
+@elseif($message->status === 'delivered')
+
+✓✓
+
+@elseif($message->status === 'sent')
+
+✓
+
+@endif
+
+
+</span>
+
+
+@endif
+
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+@empty
+
+
+<div class="text-muted">
+
+No conversation yet.
+
+</div>
+
+
+@endforelse
+
+
+
+</div>
+
+
+
+
+
+
+<div class="composer">
+
+
+<form
+
+id="replyForm"
+
+autocomplete="off"
+
+method="POST"
+
+action="{{ route('support.reply.ajax',$customer->id) }}"
+
+>
+
+
+@csrf
+
+
+
+<div class="input-group">
+
+
+<input
+
+id="messageInput"
+
+type="text"
+
+name="message"
+
+class="form-control"
+
+placeholder="Type your message..."
+
+maxlength="4096"
+
+required
+
+>
+
+
+
+<button
+
+id="sendButton"
+
+class="btn btn-success"
+
+type="submit"
+
+>
+
+Send
+
+</button>
+
+
+</div>
+
+
+</form>
+
+
+</div>
+
+
+
+</div>
+
+
+
+@else
+
+
+
+<div
+
+class="d-flex justify-content-center align-items-center"
+
+style="height:100vh"
+
+>
+
+
+<h3 class="text-muted">
+
+Select a customer
+
+</h3>
+
+
+</div>
+
+
+@endif
+
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+<script>
+
+window.supportCustomerId = @json($customer->id ?? null);
+
+</script>
+
+
+
+</body>
+
+</html>
