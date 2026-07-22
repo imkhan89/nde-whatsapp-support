@@ -21,3 +21,7 @@ Route::get('/support/{customer}', [SupportController::class, 'show'])
 
 Route::post('/support/{customer}/reply', [ReplyController::class, 'send'])
     ->name('support.reply');
+
+
+Route::post('/api/support/{customer}/reply', [ReplyController::class, 'sendAjax'])
+    ->name('support.reply.ajax');

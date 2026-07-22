@@ -8,6 +8,8 @@
 
 <title>NDE WhatsApp Support</title>
 
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
@@ -60,7 +62,9 @@ body{
 .messages{
     flex:1;
     overflow-y:auto;
+    overflow-x:hidden;
     padding:20px;
+    scroll-behavior:smooth;
 }
 
 .message-row{
@@ -170,7 +174,7 @@ class="customer {{ isset($customer) && $customer->id==$item->id ? 'active' : '' 
 
 </div>
 
-<div class="messages">
+<div id="messages" class="messages">
 
 @forelse($messages as $message)
 
@@ -212,13 +216,20 @@ No conversation yet.
 </div>
 @endif
 
-<form method="POST" action="{{ route('support.reply', $customer->id) }}">
+<form
+    id="replyForm"
+    autocomplete="off"
+    method="POST"
+    action="{{ route('support.reply.ajax', $customer->id) }}"
+>
     @csrf
 
     <div class="input-group">
 
         <input
-            type="text"
+        id="messageInput"
+        autocomplete="off"
+        type="text"
             name="message"
             class="form-control"
             placeholder="Type your message..."
@@ -228,7 +239,8 @@ No conversation yet.
         >
 
         <button
-            class="btn btn-success"
+        id="sendButton"
+        class="btn btn-success"
             type="submit"
         >
             Send
@@ -265,6 +277,7 @@ Select a customer
 
 </div>
 
-</body>
+<script src="{{ asset('js/support.js') }}"></script>
 
+</body>
 </html>
