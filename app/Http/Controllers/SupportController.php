@@ -8,27 +8,53 @@ class SupportController extends Controller
 {
     public function index()
     {
-        $customers = Customer::with('messages')
-            ->orderBy('updated_at', 'desc')
+        $customers = Customer::orderBy('updated_at', 'desc')
             ->get();
 
         return view('support.index', compact('customers'));
     }
 
+
     public function show(Customer $customer)
     {
-        $customers = Customer::with('messages')
-            ->orderBy('updated_at', 'desc')
+        $customers = Customer::orderBy('updated_at', 'desc')
             ->get();
+
 
         $messages = $customer->messages()
             ->orderBy('created_at', 'asc')
             ->get();
 
-        return view('support.index', compact(
-            'customers',
-            'customer',
-            'messages'
-        ));
+
+        return view('support.index', [
+            'customers' => $customers,
+            'customer'  => $customer,
+            'messages'  => $messages,
+        ]);
+    }
+
+
+    public function messages(Customer $customer)
+    {
+        $messages = $customer->messages()
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->map(function ($message) {
+
+                return [
+                    'id' => $message->id,
+                    'direction' => $message->direction,
+                    'message' => $message->message,
+                    'created_at' => $message->created_at
+                        ->format('d M Y H:i'),
+                ];
+
+            });
+
+
+        return response()->json([
+            'success' => true,
+            'messages' => $messages,
+        ]);
     }
 }

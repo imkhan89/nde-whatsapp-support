@@ -167,5 +167,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
     });
 
+    setInterval(async () => {
+
+    const customerId = window.location.pathname.split('/').pop();
+
+    if (!customerId || !messages) {
+        return;
+    }
+
+    const response = await fetch(
+        `/api/support/${customerId}/messages`
+    );
+
+    const data = await response.json();
+
+    messages.innerHTML = '';
+
+    data.forEach(message => {
+
+        messages.insertAdjacentHTML(
+            'beforeend',
+            `
+
+            <div class="message-row ${message.direction}">
+
+                <div class="bubble">
+
+                    ${escapeHtml(message.message)}
+
+                    <div class="time">
+                        ${message.created_at}
+                    </div>
+
+                </div>
+
+            </div>
+
+            `
+        );
+
+    });
+
+    scrollToBottom();
+
+}, 5000);
 
 });
