@@ -9,13 +9,16 @@ use Illuminate\Http\Request;
 
 class ReplyController extends Controller
 {
-    public function send(Request $request, Customer $customer, WhatsAppService $whatsapp)
-    {
+    public function send(
+        Request $request,
+        Customer $customer,
+        WhatsAppService $whatsapp
+    ) {
         $request->validate([
             'message' => [
                 'required',
                 'string',
-                'max:4096'
+                'max:4096',
             ],
         ]);
 
@@ -24,24 +27,35 @@ class ReplyController extends Controller
             $request->message
         );
 
-        if (!$result['success']) {
+        // TEMPORARY DEBUG - REMOVE AFTER TESTING
+        dd($result);
 
-            return back()->with(
-                'error',
-                'WhatsApp message failed'
+        if (! $result['success']) {
+
+            $errorMessage = data_get(
+                $result,
+                'body.error.message',
+                'Unknown WhatsApp API error.'
             );
 
+            return back()
+                ->withInput()
+                ->with(
+                    'error',
+                    "WhatsApp Error ({$result['status']}): {$errorMessage}"
+                );
         }
 
-
         Message::create([
-            'customer_id' => $customer->id,
+            'customer_id'   => $customer->id,
             'wa_message_id' => $result['message_id'],
-            'direction' => 'outgoing',
-            'message' => $request->message,
+            'direction'     => 'outgoing',
+            'message'       => $request->message,
         ]);
 
-
-        return back();
+        return back()->with(
+            'success',
+            'Message sent successfully.'
+        );
     }
 }

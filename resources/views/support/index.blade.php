@@ -200,44 +200,41 @@ No conversation yet.
 
 <div class="composer">
 
-@if(session('error'))
-
-<div class="alert alert-danger">
-
-{{ session('error') }}
-
+@if(session('success'))
+<div class="alert alert-success">
+    {{ session('success') }}
 </div>
-
 @endif
 
-<form
-method="POST"
-action="{{ route('support.reply',$customer->id) }}"
->
-
-@csrf
-
-<div class="input-group">
-
-<input
-type="text"
-name="message"
-class="form-control"
-placeholder="Type your message..."
-required
-maxlength="4096"
->
-
-<button
-class="btn btn-success"
-type="submit"
->
-
-Send
-
-</button>
-
+@if(session('error'))
+<div class="alert alert-danger">
+    {{ session('error') }}
 </div>
+@endif
+
+<form method="POST" action="{{ route('support.reply', $customer->id) }}">
+    @csrf
+
+    <div class="input-group">
+
+        <input
+            type="text"
+            name="message"
+            class="form-control"
+            placeholder="Type your message..."
+            value="{{ old('message') }}"
+            required
+            maxlength="4096"
+        >
+
+        <button
+            class="btn btn-success"
+            type="submit"
+        >
+            Send
+        </button>
+
+    </div>
 
 </form>
 
