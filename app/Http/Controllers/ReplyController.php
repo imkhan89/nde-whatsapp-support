@@ -9,7 +9,7 @@ class ReplyController extends Controller
 {
     public function send(Request $request, Customer $customer)
     {
-        dd([
+        return response()->json([
             'controller_reached' => true,
             'customer_id' => $customer->id,
             'phone' => $customer->phone,
