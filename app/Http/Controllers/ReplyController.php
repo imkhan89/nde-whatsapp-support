@@ -44,6 +44,7 @@ class ReplyController extends Controller
         }
 
 
+
         Message::create([
             'customer_id' => $customer->id,
 
@@ -58,7 +59,10 @@ class ReplyController extends Controller
             'message' => $request->message,
 
             'is_read' => true,
+
+            'status' => 'sent',
         ]);
+
 
 
         return redirect()
@@ -71,6 +75,8 @@ class ReplyController extends Controller
 
 
 
+
+
     /**
      * AJAX reply endpoint
      */
@@ -79,6 +85,7 @@ class ReplyController extends Controller
         Customer $customer,
         WhatsAppService $whatsapp
     ) {
+
         $request->validate([
             'message' => [
                 'required',
@@ -88,20 +95,25 @@ class ReplyController extends Controller
         ]);
 
 
+
         $response = $whatsapp->sendMessage(
             $customer->phone,
             $request->message
         );
 
 
+
         if (!$response) {
 
             return response()->json([
                 'success' => false,
+
                 'error' => 'WhatsApp message failed.',
+
             ], 400);
 
         }
+
 
 
 
@@ -109,19 +121,27 @@ class ReplyController extends Controller
 
             'customer_id' => $customer->id,
 
+
             'wa_message_id' =>
                 data_get(
                     $response,
                     'messages.0.id'
                 ),
 
+
             'direction' => 'outgoing',
+
 
             'message' => $request->message,
 
+
             'is_read' => true,
 
+
+            'status' => 'sent',
+
         ]);
+
 
 
 
@@ -129,13 +149,20 @@ class ReplyController extends Controller
 
             'success' => true,
 
+
             'message' => [
 
                 'id' => $message->id,
 
+
                 'text' => $message->message,
 
+
                 'direction' => $message->direction,
+
+
+                'status' => $message->status,
+
 
                 'created_at' =>
                     $message->created_at
