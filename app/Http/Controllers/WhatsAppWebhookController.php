@@ -19,58 +19,134 @@ class WhatsAppWebhookController extends Controller
         $token = $request->query('hub_verify_token', $request->query('hub.verify_token'));
         $challenge = $request->query('hub_challenge', $request->query('hub.challenge'));
 
+
         if (
             $mode === 'subscribe' &&
             $token === config('whatsapp.verify_token')
         ) {
+
             return response($challenge, 200)
                 ->header('Content-Type', 'text/plain');
         }
+
 
         return response('Forbidden', 403);
     }
 
 
+
     /**
-     * Receive incoming WhatsApp webhook events.
+     * Receive WhatsApp webhook events.
      */
     public function receive(Request $request)
     {
         try {
 
-            // Debug log
+            $payload = $request->all();
+
+
             Log::info('WhatsApp webhook received', [
-                'payload' => $request->all(),
+                'payload' => $payload,
             ]);
 
 
-            // Store raw webhook payload
+
+            /*
+            |--------------------------------------------------------------------------
+            | Store webhook log
+            |--------------------------------------------------------------------------
+            */
+
             WebhookLog::create([
                 'payload' => json_encode(
-                    $request->all(),
+                    $payload,
                     JSON_PRETTY_PRINT
                 ),
             ]);
 
 
+
             $value = data_get(
-                $request->all(),
+                $payload,
                 'entry.0.changes.0.value'
             );
 
 
-            // Ignore delivery/status updates
-            if (
-                !$value ||
-                empty($value['messages'])
-            ) {
+
+            if (!$value) {
+
                 return response()->json([
                     'success' => true,
                 ]);
             }
 
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Handle WhatsApp Message Status Updates
+            |--------------------------------------------------------------------------
+            |
+            | Updates:
+            | sent
+            | delivered
+            | read
+            | failed
+            |
+            */
+
+            if (!empty($value['statuses'])) {
+
+
+                foreach ($value['statuses'] as $status) {
+
+
+                    Message::where(
+                        'wa_message_id',
+                        $status['id']
+                    )
+                    ->update([
+                        'status' => $status['status'],
+                    ]);
+
+
+                    Log::info(
+                        'WhatsApp message status updated',
+                        [
+                            'message_id' => $status['id'],
+                            'status' => $status['status'],
+                        ]
+                    );
+                }
+            }
+
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Ignore if no incoming messages
+            |--------------------------------------------------------------------------
+            */
+
+            if (empty($value['messages'])) {
+
+                return response()->json([
+                    'success' => true,
+                ]);
+
+            }
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Handle Incoming Messages
+            |--------------------------------------------------------------------------
+            */
+
             $contact = $value['contacts'][0] ?? [];
+
 
 
             foreach ($value['messages'] as $waMessage) {
@@ -86,14 +162,19 @@ class WhatsAppWebhookController extends Controller
                             'profile.name',
                             'WhatsApp User'
                         ),
+
                         'last_name' => '',
+
                         'email' => null,
+
                         'shopify_customer_id' => null,
                     ]
                 );
 
 
+
                 Message::create([
+
                     'customer_id' => $customer->id,
 
                     'wa_message_id' => $waMessage['id'],
@@ -107,14 +188,27 @@ class WhatsAppWebhookController extends Controller
                     ),
 
                     'is_read' => false,
+
+                    'status' => 'received',
+
                 ]);
 
+
+                Log::info(
+                    'Incoming WhatsApp message stored',
+                    [
+                        'customer_id' => $customer->id,
+                        'message_id' => $waMessage['id'],
+                    ]
+                );
             }
+
 
 
             return response()->json([
                 'success' => true,
             ]);
+
 
 
         } catch (\Throwable $e) {
@@ -124,7 +218,9 @@ class WhatsAppWebhookController extends Controller
                 'WhatsApp webhook failed',
                 [
                     'message' => $e->getMessage(),
+
                     'file' => $e->getFile(),
+
                     'line' => $e->getLine(),
                 ]
             );
@@ -132,7 +228,9 @@ class WhatsAppWebhookController extends Controller
 
             return response()->json([
                 'success' => false,
+
                 'error' => $e->getMessage(),
+
             ], 500);
 
         }
