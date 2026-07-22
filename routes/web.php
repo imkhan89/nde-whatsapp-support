@@ -7,7 +7,7 @@ use App\Http\Controllers\ReplyController;
 
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('support.index');
 });
 
 
@@ -25,6 +25,7 @@ Route::post('/support/{customer}/reply', [ReplyController::class, 'send'])
 
 Route::post('/api/support/{customer}/reply', [ReplyController::class, 'sendAjax'])
     ->name('support.reply.ajax');
+
 
 Route::get('/api/support/{customer}/messages', [SupportController::class, 'messages'])
     ->name('support.messages');
