@@ -8,8 +8,14 @@ class SupportController extends Controller
 {
     public function index()
     {
-        $customers = Customer::orderBy('updated_at', 'desc')
+        $customers = Customer::with([
+                'messages' => function ($query) {
+                    $query->latest();
+                }
+            ])
+            ->orderBy('updated_at', 'desc')
             ->get();
+
 
         return view('support.index', compact('customers'));
     }
@@ -17,7 +23,12 @@ class SupportController extends Controller
 
     public function show(Customer $customer)
     {
-        $customers = Customer::orderBy('updated_at', 'desc')
+        $customers = Customer::with([
+                'messages' => function ($query) {
+                    $query->latest();
+                }
+            ])
+            ->orderBy('updated_at', 'desc')
             ->get();
 
 
@@ -34,6 +45,9 @@ class SupportController extends Controller
     }
 
 
+    /**
+     * AJAX message refresh endpoint
+     */
     public function messages(Customer $customer)
     {
         $messages = $customer->messages()
