@@ -1,86 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhatsApp Support</title>
 
-    <meta charset="UTF-8">
+<style>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,Helvetica,sans-serif;
+}
 
-    <title>WhatsApp Support</title>
+body{
+    background:#ece5dd;
+}
 
-    <style>
+.container{
+    display:flex;
+    height:100vh;
+}
 
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-            font-family:Arial, Helvetica, sans-serif;
-        }
+.sidebar{
+    width:320px;
+    background:#fff;
+    border-right:1px solid #ddd;
+    overflow-y:auto;
+}
 
-        body{
-            background:#f5f5f5;
-        }
+.sidebar h2{
+    background:#25D366;
+    color:#fff;
+    padding:20px;
+}
 
-        .container{
-            display:flex;
-            height:100vh;
-        }
+.customer{
+    display:block;
+    padding:15px;
+    text-decoration:none;
+    color:#222;
+    border-bottom:1px solid #eee;
+}
 
-        .sidebar{
-            width:320px;
-            background:#ffffff;
-            border-right:1px solid #ddd;
-            overflow-y:auto;
-        }
+.customer:hover{
+    background:#f7f7f7;
+}
 
-        .sidebar h2{
-            padding:20px;
-            background:#25D366;
-            color:white;
-            font-size:22px;
-        }
+.customer.active{
+    background:#e8f5e9;
+}
 
-        .customer{
-            display:block;
-            padding:18px;
-            color:#333;
-            text-decoration:none;
-            border-bottom:1px solid #eee;
-        }
+.chat{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+}
 
-        .customer:hover{
-            background:#f4f4f4;
-        }
+.header{
+    background:#fff;
+    border-bottom:1px solid #ddd;
+    padding:18px;
+}
 
-        .customer.active{
-            background:#e8f5e9;
-        }
+.messages{
+    flex:1;
+    overflow-y:auto;
+    padding:20px;
+}
 
-        .customer strong{
-            display:block;
-            font-size:16px;
-            margin-bottom:5px;
-        }
+.message{
+    max-width:70%;
+    padding:12px;
+    margin-bottom:12px;
+    border-radius:8px;
+    word-break:break-word;
+}
 
-        .chat{
-            flex:1;
-            background:#fafafa;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-        }
+.incoming{
+    background:white;
+    margin-right:auto;
+}
 
-        .welcome{
-            text-align:center;
-            color:#888;
-        }
+.outgoing{
+    background:#DCF8C6;
+    margin-left:auto;
+}
 
-        .welcome h1{
-            margin-bottom:15px;
-        }
+.time{
+    margin-top:6px;
+    font-size:11px;
+    color:#777;
+}
 
-    </style>
+.empty{
+    height:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:#888;
+    font-size:22px;
+}
+
+</style>
 
 </head>
 
@@ -88,83 +111,80 @@
 
 <div class="container">
 
-    <div class="sidebar">
+<div class="sidebar">
 
-        <h2>Customers</h2>
+<h2>Customers</h2>
 
-        @forelse($customers as $item)
+@foreach($customers as $item)
 
-            <a
-                href="{{ route('support.show',$item->id) }}"
-                class="customer {{ isset($customer) && $customer->id==$item->id ? 'active' : '' }}"
-            >
+<a
+href="{{ route('support.show',$item->id) }}"
+class="customer {{ isset($customer) && $customer->id==$item->id ? 'active' : '' }}"
+>
 
-                <strong>
+<strong>{{ $item->first_name ?: 'WhatsApp User' }}</strong>
 
-                    {{ $item->first_name ?: 'WhatsApp User' }}
+{{ $item->phone }}
 
-                </strong>
+</a>
 
-                {{ $item->phone }}
+@endforeach
 
-            </a>
+</div>
 
-        @empty
+<div class="chat">
 
-            <div style="padding:20px">
+@if(isset($customer))
 
-                No Customers Found
+<div class="header">
 
-            </div>
+<h2>{{ $customer->first_name }}</h2>
 
-        @endforelse
+<div>{{ $customer->phone }}</div>
 
-    </div>
+</div>
 
-    <div class="chat">
+<div class="messages">
 
-        @if(isset($customer))
+@forelse($messages as $message)
 
-            <div class="welcome">
+<div class="message {{ $message->direction=='incoming' ? 'incoming' : 'outgoing' }}">
 
-                <h1>
+{{ $message->message }}
 
-                    {{ $customer->first_name }}
+<div class="time">
 
-                </h1>
+{{ $message->created_at->format('d M Y H:i') }}
 
-                <p>
+</div>
 
-                    {{ $customer->phone }}
+</div>
 
-                </p>
+@empty
 
-            </div>
+<div class="empty">
 
-        @else
+No conversation yet.
 
-            <div class="welcome">
+</div>
 
-                <h1>
+@endforelse
 
-                    WhatsApp Support Dashboard
+</div>
 
-                </h1>
+@else
 
-                <p>
+<div class="empty">
 
-                    Select a customer from the left panel.
+Select a customer
 
-                </p>
+</div>
 
-            </div>
+@endif
 
-        @endif
-
-    </div>
+</div>
 
 </div>
 
 </body>
-
 </html>

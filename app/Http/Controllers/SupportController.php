@@ -15,13 +15,16 @@ class SupportController extends Controller
 
     public function show(Customer $customer)
     {
-        $customer->load('messages');
-
         $customers = Customer::orderBy('updated_at', 'desc')->get();
+
+        $messages = $customer->messages()
+            ->orderBy('created_at')
+            ->get();
 
         return view('support.index', compact(
             'customers',
-            'customer'
+            'customer',
+            'messages'
         ));
     }
 }
