@@ -10,7 +10,17 @@
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
-@vite(['resources/js/support.js'])
+
+<script>
+    window.supportCustomerId = @json($customer->id ?? null);
+</script>
+
+
+@vite([
+    'resources/css/app.css',
+    'resources/js/app.js',
+    'resources/js/support.js'
+])
 
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -130,13 +140,10 @@ body{
 
 
 .composer{
-
     background:#fff;
     border-top:1px solid #ddd;
     padding:15px;
-
 }
-
 
 </style>
 
@@ -272,7 +279,11 @@ $item->messages->first()->message,
 
 
 
-<div id="messages" class="messages">
+<div 
+id="messages" 
+class="messages"
+data-last-message-id="{{ $messages->max('id') ?? 0 }}"
+>
 
 
 
