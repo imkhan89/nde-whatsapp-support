@@ -13,11 +13,14 @@ class Message extends Model
         'direction',
         'message',
         'is_read',
+        'status',
     ];
+
 
     protected $casts = [
         'is_read' => 'boolean',
     ];
+
 
     public function customer(): BelongsTo
     {
