@@ -1,30 +1,100 @@
+/*
+|--------------------------------------------------------------------------
+| Prevent duplicate support.js initialization
+|--------------------------------------------------------------------------
+*/
+
+if (!window.NDESupportLoaded) {
+
+
+window.NDESupportLoaded = true;
+
+
+
 document.addEventListener("DOMContentLoaded", function () {
+
 
     console.log("NDE WhatsApp Support JS Loaded");
 
 
-    const customerId = window.supportCustomerId;
 
-    const form = document.getElementById("replyForm");
-    const input = document.getElementById("messageInput");
-    const button = document.getElementById("sendButton");
-    const messagesBox = document.getElementById("messages");
+    const customerId =
+        window.supportCustomerId;
+
+
+
+    const form =
+        document.getElementById("replyForm");
+
+
+    const input =
+        document.getElementById("messageInput");
+
+
+    const button =
+        document.getElementById("sendButton");
+
+
+    const messagesBox =
+        document.getElementById("messages");
+
 
 
     if (!messagesBox) {
+
         return;
+
     }
 
 
-    function scrollBottom() {
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Scroll chat bottom
+    |--------------------------------------------------------------------------
+    */
+
+
+    function scrollBottom(){
+
 
         messagesBox.scrollTop =
             messagesBox.scrollHeight;
 
+
     }
 
 
+
     scrollBottom();
+
+
+
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Track latest message
+    |--------------------------------------------------------------------------
+    */
+
+
+    let latestMessageId =
+        Number(
+            messagesBox.dataset.lastMessageId || 0
+        );
+
+
+
+    let pollingRunning = false;
+
+
+
+
+
 
 
 
@@ -34,108 +104,172 @@ document.addEventListener("DOMContentLoaded", function () {
     |--------------------------------------------------------------------------
     */
 
-    if (form) {
 
-        form.addEventListener("submit", async function (e) {
-
-            e.preventDefault();
+    if(form){
 
 
-            let message = input.value.trim();
+        form.addEventListener(
+            "submit",
+            async function(e){
 
 
-            if (!message) {
-                return;
-            }
+                e.preventDefault();
 
 
-            button.disabled = true;
-            button.innerText = "Sending...";
+
+                let message =
+                    input.value.trim();
 
 
-            let formData = new FormData();
 
-            formData.append(
-                "message",
-                message
-            );
+                if(!message){
 
-
-            try {
-
-
-                let response = await fetch(
-                    form.action,
-                    {
-
-                        method: "POST",
-
-                        headers: {
-
-                            "X-CSRF-TOKEN":
-                                document
-                                .querySelector(
-                                    'meta[name="csrf-token"]'
-                                )
-                                .content,
-
-                            "Accept":
-                                "application/json"
-
-                        },
-
-                        body: formData
-
-                    }
-                );
-
-
-                let data =
-                    await response.json();
-
-
-                if (data.success) {
-
-
-                    addMessage(
-                        data.message
-                    );
-
-
-                    input.value = "";
-
-                    scrollBottom();
-
-
-                } else {
-
-
-                    alert(
-                        data.error ??
-                        "Message failed"
-                    );
+                    return;
 
                 }
 
 
-            } catch (error) {
 
 
-                console.error(error);
+                button.disabled = true;
 
-                alert(
-                    "Unable to send message"
+                button.innerText =
+                    "Sending...";
+
+
+
+
+                let formData =
+                    new FormData();
+
+
+
+                formData.append(
+                    "message",
+                    message
                 );
 
+
+
+
+
+
+                try {
+
+
+
+                    let response =
+                        await fetch(
+                            form.action,
+                            {
+
+                                method:"POST",
+
+
+                                headers:{
+
+
+                                    "X-CSRF-TOKEN":
+                                    document
+                                    .querySelector(
+                                        'meta[name="csrf-token"]'
+                                    )
+                                    .content,
+
+
+                                    "Accept":
+                                    "application/json"
+
+                                },
+
+
+                                body:formData
+
+                            }
+                        );
+
+
+
+
+
+                    let data =
+                        await response.json();
+
+
+
+
+
+
+                    if(data.success){
+
+
+
+                        addMessage(
+                            data.message
+                        );
+
+
+
+                        latestMessageId =
+                            Math.max(
+                                latestMessageId,
+                                data.message.id
+                            );
+
+
+
+                        input.value = "";
+
+
+
+                        scrollBottom();
+
+
+
+                    }
+                    else{
+
+
+                        alert(
+                            data.error ??
+                            "Message failed"
+                        );
+
+
+                    }
+
+
+
+
+                }
+                catch(error){
+
+
+                    console.error(
+                        "Send error:",
+                        error
+                    );
+
+
+                    alert(
+                        "Unable to send message"
+                    );
+
+
+                }
+
+
+
+
+
+                button.disabled=false;
+
+                button.innerText="Send";
+
+
+
             }
-
-
-            button.disabled = false;
-
-            button.innerText = "Send";
-
-
-        });
+        );
 
     }
 
@@ -143,37 +277,67 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
+
+
+
+
     /*
     |--------------------------------------------------------------------------
-    | Auto refresh incoming messages
+    | Fetch New Messages
     |--------------------------------------------------------------------------
     */
 
 
-    let latestMessageId = 0;
+    async function loadMessages(){
 
 
-    setInterval(async function () {
 
+        if(
+            !customerId ||
+            pollingRunning
+        ){
 
-        if (!customerId) {
             return;
+
         }
 
 
-        try {
+
+
+        pollingRunning = true;
+
+
+
+
+
+        try{
 
 
             let response =
                 await fetch(
-                    `/api/support/${customerId}/messages`,
+                    `/api/support/${customerId}/messages?_=${Date.now()}`,
                     {
-                        headers: {
+
+                        method:"GET",
+
+                        headers:{
+
+
                             "Accept":
-                                "application/json"
+                            "application/json",
+
+
+                            "Cache-Control":
+                            "no-cache"
+
                         }
+
                     }
                 );
+
+
+
+
 
 
             let data =
@@ -181,48 +345,69 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
-            if (
+
+
+
+
+            if(
                 data.success &&
-                data.messages.length
-            ) {
+                Array.isArray(data.messages)
+            ){
+
 
 
                 data.messages.forEach(
-                    function (message) {
+                    function(message){
 
 
-                        if (
-                            message.id >
+
+                        if(
+                            Number(message.id) >
                             latestMessageId
-                        ) {
+                        ){
 
 
-                            if (
+
+                            if(
                                 !document.querySelector(
-                                    `[data-message-id="${message.id}"]`
+                                `[data-message-id="${message.id}"]`
                                 )
-                            ) {
+                            ){
 
-                                addMessage(message);
+                                addMessage(
+                                    message
+                                );
+
 
                             }
 
 
+
                             latestMessageId =
-                                message.id;
+                                Number(message.id);
+
+
 
                         }
+
+
 
                     }
                 );
 
 
+
                 scrollBottom();
+
+
 
             }
 
 
-        } catch (error) {
+
+
+        }
+        catch(error){
 
 
             console.error(
@@ -234,7 +419,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-    }, 5000);
+
+
+        pollingRunning=false;
+
+
+
+    }
+
+
 
 
 
@@ -244,16 +437,45 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Add message to chat
+    | Start single polling timer
     |--------------------------------------------------------------------------
     */
 
 
-    function addMessage(message) {
+    if(!window.NDEMessagePolling){
+
+
+        window.NDEMessagePolling =
+            setInterval(
+                loadMessages,
+                5000
+            );
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Add Message
+    |--------------------------------------------------------------------------
+    */
+
+
+    function addMessage(message){
+
 
 
         let row =
             document.createElement("div");
+
 
 
         row.className =
@@ -261,8 +483,14 @@ document.addEventListener("DOMContentLoaded", function () {
             message.direction;
 
 
+
+
         row.dataset.messageId =
             message.id;
+
+
+
+
 
 
 
@@ -270,7 +498,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             <div class="bubble">
 
-                ${escapeHtml(message.message)}
+
+                ${escapeHtml(
+                    message.message
+                )}
+
 
                 <div class="time">
 
@@ -278,12 +510,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 </div>
 
+
             </div>
+
 
         `;
 
 
+
+
         messagesBox.appendChild(row);
+
+
 
     }
 
@@ -291,19 +529,47 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
-    function escapeHtml(text) {
+
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Escape HTML
+    |--------------------------------------------------------------------------
+    */
+
+
+    function escapeHtml(text){
+
 
 
         let div =
             document.createElement("div");
 
 
-        div.innerText = text;
+
+        div.innerText =
+            text ?? "";
+
 
 
         return div.innerHTML;
 
+
     }
 
 
+
+
 });
+
+
+}
+else {
+
+    console.log(
+        "NDE Support JS already loaded"
+    );
+
+}
