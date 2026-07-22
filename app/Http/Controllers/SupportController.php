@@ -8,17 +8,21 @@ class SupportController extends Controller
 {
     public function index()
     {
-        $customers = Customer::orderBy('updated_at', 'desc')->get();
+        $customers = Customer::with('messages')
+            ->orderBy('updated_at', 'desc')
+            ->get();
 
         return view('support.index', compact('customers'));
     }
 
     public function show(Customer $customer)
     {
-        $customers = Customer::orderBy('updated_at', 'desc')->get();
+        $customers = Customer::with('messages')
+            ->orderBy('updated_at', 'desc')
+            ->get();
 
         $messages = $customer->messages()
-            ->orderBy('created_at')
+            ->orderBy('created_at', 'asc')
             ->get();
 
         return view('support.index', compact(
