@@ -7,83 +7,84 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsAppService
 {
-    public function sendMessage(
-        string $phone,
-        string $message
-    ): ?array {
-
+    public function sendMessage(string $phone, string $message): ?array
+    {
         try {
 
+            Log::info('WhatsApp send initiated', [
+                'phone' => $phone,
+            ]);
+
             if (empty($phone)) {
-                Log::warning(
-                    'WhatsApp message skipped: empty phone number'
-                );
+
+                Log::warning('WhatsApp message skipped: empty phone number');
 
                 return null;
             }
 
-
             $version = config('whatsapp.api_version');
+            $phoneNumberId = config('whatsapp.phone_number_id');
+            $accessToken = config('whatsapp.access_token');
 
-            $phoneNumberId = config(
-                'whatsapp.phone_number_id'
-            );
+            Log::info('WhatsApp configuration loaded', [
+                'api_version' => $version,
+                'phone_number_id' => $phoneNumberId,
+                'token_prefix' => substr($accessToken, 0, 20) . '...',
+            ]);
 
+            $url = "https://graph.facebook.com/{$version}/{$phoneNumberId}/messages";
 
-            $response = Http::withToken(
-                config('whatsapp.access_token')
-            )
-            ->post(
-                "https://graph.facebook.com/{$version}/{$phoneNumberId}/messages",
-                [
-                    'messaging_product' => 'whatsapp',
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'recipient_type' => 'individual',
+                'to' => $phone,
+                'type' => 'text',
+                'text' => [
+                    'preview_url' => false,
+                    'body' => $message,
+                ],
+            ];
 
-                    'recipient_type' => 'individual',
+            Log::info('Sending WhatsApp API request', [
+                'url' => $url,
+                'payload' => $payload,
+            ]);
 
-                    'to' => $phone,
+            $response = Http::withToken($accessToken)
+                ->acceptJson()
+                ->post($url, $payload);
 
-                    'type' => 'text',
-
-                    'text' => [
-                        'preview_url' => false,
-
-                        'body' => $message,
-                    ],
-                ]
-            );
-
+            Log::info('WhatsApp API responded', [
+                'status' => $response->status(),
+                'successful' => $response->successful(),
+            ]);
 
             if (!$response->successful()) {
 
-                Log::error(
-                    'WhatsApp API request failed',
-                    [
-                        'status' =>
-                            $response->status(),
-
-                        'response' =>
-                            $response->json(),
-                    ]
-                );
+                Log::error('WhatsApp API request failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'json' => $response->json(),
+                    'headers' => $response->headers(),
+                ]);
 
                 return null;
             }
 
+            Log::info('WhatsApp message sent successfully', [
+                'response' => $response->json(),
+            ]);
 
             return $response->json();
 
-
         } catch (\Throwable $e) {
 
-
-            Log::error(
-                'WhatsApp send exception',
-                [
-                    'error' =>
-                        $e->getMessage(),
-                ]
-            );
-
+            Log::error('WhatsApp send exception', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
             return null;
         }
