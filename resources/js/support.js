@@ -8,6 +8,7 @@
 
 if (window.NDE_SUPPORT_INITIALIZED) {
 
+
     console.log(
         "NDE Support JS already initialized"
     );
@@ -23,6 +24,7 @@ window.NDE_SUPPORT_INITIALIZED = true;
 document.addEventListener(
 "DOMContentLoaded",
 function(){
+
 
 
 console.log(
@@ -63,6 +65,7 @@ const messagesBox =
 
 
 
+
 if(!messagesBox){
 
     return;
@@ -82,10 +85,13 @@ if(!messagesBox){
 
 function scrollBottom(){
 
+
     messagesBox.scrollTop =
         messagesBox.scrollHeight;
 
+
 }
+
 
 
 scrollBottom();
@@ -97,18 +103,13 @@ scrollBottom();
 
 /*
 |--------------------------------------------------------------------------
-| Message Tracking
+| Polling Lock
 |--------------------------------------------------------------------------
 */
 
 
-let latestMessageId =
-    Number(
-        messagesBox.dataset.lastMessageId || 0
-    );
-
-
 let pollingRunning = false;
+
 
 
 
@@ -123,6 +124,7 @@ let pollingRunning = false;
 
 
 if(form){
+
 
 
 form.addEventListener(
@@ -159,6 +161,7 @@ button.innerText =
 
 let formData =
     new FormData();
+
 
 
 formData.append(
@@ -210,8 +213,10 @@ let response =
 
 
 
+
 let data =
     await response.json();
+
 
 
 
@@ -225,14 +230,6 @@ if(data.success){
     addMessage(
         data.message
     );
-
-
-
-    latestMessageId =
-        Math.max(
-            latestMessageId,
-            Number(data.message.id)
-        );
 
 
 
@@ -264,15 +261,18 @@ else{
 catch(error){
 
 
+
 console.error(
     "Send error:",
     error
 );
 
 
+
 alert(
     "Unable to send message"
 );
+
 
 
 }
@@ -286,10 +286,14 @@ button.innerText="Send";
 
 
 
+
 });
 
 
+
 }
+
+
 
 
 
@@ -314,9 +318,12 @@ if(
     pollingRunning
 ){
 
+
     return;
 
+
 }
+
 
 
 
@@ -359,8 +366,10 @@ let response =
 
 
 
+
 let data =
     await response.json();
+
 
 
 
@@ -379,19 +388,16 @@ function(message){
 
 
 
-if(
-    Number(message.id)
-    >
-    latestMessageId
-){
-
-
-
-if(
-    !document.querySelector(
+let exists =
+    document.querySelector(
         `[data-message-id="${message.id}"]`
-    )
-){
+    );
+
+
+
+
+if(!exists){
+
 
 
     addMessage(
@@ -403,19 +409,12 @@ if(
 
 
 
-latestMessageId =
-    Number(message.id);
-
-
-
-}
-
-
-
 });
 
 
+
 scrollBottom();
+
 
 
 }
@@ -427,13 +426,16 @@ scrollBottom();
 catch(error){
 
 
+
 console.error(
     "Polling error:",
     error
 );
 
 
+
 }
+
 
 
 
@@ -450,9 +452,10 @@ pollingRunning=false;
 
 
 
+
 /*
 |--------------------------------------------------------------------------
-| Start ONE polling timer
+| Start Single Polling Timer
 |--------------------------------------------------------------------------
 */
 
@@ -462,11 +465,13 @@ if(
 ){
 
 
+
 window.NDE_SUPPORT_TIMER =
     setInterval(
         loadMessages,
         5000
     );
+
 
 
 }
@@ -481,7 +486,7 @@ window.NDE_SUPPORT_TIMER =
 
 /*
 |--------------------------------------------------------------------------
-| Add Message To Chat
+| Add Message
 |--------------------------------------------------------------------------
 */
 
@@ -497,14 +502,17 @@ let row =
 
 
 
+
 row.className =
     "message-row " +
-    message.direction;
+    (message.direction ?? "incoming");
+
 
 
 
 row.dataset.messageId =
     message.id;
+
 
 
 
@@ -524,7 +532,7 @@ ${escapeHtml(
 
 <div class="time">
 
-${message.created_at}
+${message.created_at ?? ""}
 
 </div>
 
@@ -534,6 +542,8 @@ ${message.created_at}
 
 
 `;
+
+
 
 
 
@@ -563,17 +573,21 @@ messagesBox.appendChild(
 function escapeHtml(text){
 
 
+
 let div =
     document.createElement(
         "div"
     );
 
 
+
 div.innerText =
     text ?? "";
 
 
+
 return div.innerHTML;
+
 
 
 }
@@ -598,9 +612,11 @@ window.addEventListener(
 function(){
 
 
+
 if(
     window.NDE_SUPPORT_TIMER
 ){
+
 
 
 clearInterval(
@@ -608,8 +624,10 @@ clearInterval(
 );
 
 
+
 window.NDE_SUPPORT_TIMER =
     null;
+
 
 
 }
@@ -617,6 +635,9 @@ window.NDE_SUPPORT_TIMER =
 
 
 });
+
+
+
 
 
 });
