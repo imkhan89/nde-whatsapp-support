@@ -41,5 +41,11 @@
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true
+  },
+  "resources/js/support.js": {
+    "file": "assets/support-DfEkjGh1.js",
+    "name": "support",
+    "src": "resources/js/support.js",
+    "isEntry": true
   }
 }
