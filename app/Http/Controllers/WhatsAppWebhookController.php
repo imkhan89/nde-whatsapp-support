@@ -30,62 +30,111 @@ class WhatsAppWebhookController extends Controller
         return response('Forbidden', 403);
     }
 
+
     /**
      * Receive incoming WhatsApp webhook events.
      */
     public function receive(Request $request)
     {
         try {
-            // Store the raw payload for future troubleshooting
-            WebhookLog::create([
-                'payload' => json_encode($request->all(), JSON_PRETTY_PRINT),
+
+            // Debug log
+            Log::info('WhatsApp webhook received', [
+                'payload' => $request->all(),
             ]);
 
-            $value = data_get($request->all(), 'entry.0.changes.0.value');
 
-            if (!$value || empty($value['messages'])) {
+            // Store raw webhook payload
+            WebhookLog::create([
+                'payload' => json_encode(
+                    $request->all(),
+                    JSON_PRETTY_PRINT
+                ),
+            ]);
+
+
+            $value = data_get(
+                $request->all(),
+                'entry.0.changes.0.value'
+            );
+
+
+            // Ignore delivery/status updates
+            if (
+                !$value ||
+                empty($value['messages'])
+            ) {
                 return response()->json([
                     'success' => true,
                 ]);
             }
 
-            foreach ($value['messages'] as $waMessage)
+
             $contact = $value['contacts'][0] ?? [];
 
-            $customer = Customer::firstOrCreate(
-                [
-                    'phone' => $waMessage['from'],
-                ],
-                [
-                    'first_name' => data_get($contact, 'profile.name', 'WhatsApp User'),
-                    'last_name' => '',
-                    'email' => null,
-                    'shopify_customer_id' => null,
-                ]
-            );
 
-            Message::create([
-                'customer_id'   => $customer->id,
-                'wa_message_id' => $waMessage['id'],
-                'direction'     => 'incoming',
-                'message'       => data_get($waMessage, 'text.body', ''),
-                'is_read'       => false,
+            foreach ($value['messages'] as $waMessage) {
+
+
+                $customer = Customer::firstOrCreate(
+                    [
+                        'phone' => $waMessage['from'],
+                    ],
+                    [
+                        'first_name' => data_get(
+                            $contact,
+                            'profile.name',
+                            'WhatsApp User'
+                        ),
+                        'last_name' => '',
+                        'email' => null,
+                        'shopify_customer_id' => null,
+                    ]
+                );
+
+
+                Message::create([
+                    'customer_id' => $customer->id,
+
+                    'wa_message_id' => $waMessage['id'],
+
+                    'direction' => 'incoming',
+
+                    'message' => data_get(
+                        $waMessage,
+                        'text.body',
+                        ''
+                    ),
+
+                    'is_read' => false,
                 ]);
+
+            }
+
 
             return response()->json([
                 'success' => true,
             ]);
+
+
         } catch (\Throwable $e) {
 
-            Log::error('WhatsApp webhook failed', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ]);
+
+            Log::error(
+                'WhatsApp webhook failed',
+                [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]
+            );
+
 
             return response()->json([
                 'success' => false,
+                'error' => $e->getMessage(),
             ], 500);
+
         }
     }
 }
