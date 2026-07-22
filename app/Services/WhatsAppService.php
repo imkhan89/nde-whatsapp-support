@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WhatsAppService
 {
@@ -25,10 +26,18 @@ class WhatsAppService
                 ],
             ]);
 
+        $data = $response->json();
+
+        Log::info('WhatsApp send response', [
+            'to' => $to,
+            'response' => $data,
+        ]);
+
         return [
             'success' => $response->successful(),
             'status' => $response->status(),
-            'body' => $response->json(),
+            'message_id' => data_get($data, 'messages.0.id'),
+            'body' => $data,
         ];
     }
 }

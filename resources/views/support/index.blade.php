@@ -4,320 +4,157 @@
 <head>
 
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>NDE WhatsApp Support</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-
-
 <style>
 
 body{
     margin:0;
-    height:100vh;
-    overflow:hidden;
-    background:#f0f2f5;
+    background:#ece5dd;
     font-family:Arial, Helvetica, sans-serif;
 }
 
-
-.support-container{
-
-    display:flex;
+.container-fluid{
     height:100vh;
-
 }
-
-
-/* Sidebar */
 
 .sidebar{
-
-    width:350px;
-    background:white;
-    border-right:1px solid #ddd;
+    height:100vh;
     overflow-y:auto;
-
+    border-right:1px solid #ddd;
+    background:#fff;
 }
-
-
-.sidebar-header{
-
-    background:#25D366;
-    color:white;
-    padding:20px;
-
-}
-
 
 .customer{
-
     display:block;
     padding:15px;
+    border-bottom:1px solid #eee;
     text-decoration:none;
     color:#222;
-    border-bottom:1px solid #eee;
-
 }
-
 
 .customer:hover{
-
-    background:#f5f5f5;
-
+    background:#f7f7f7;
 }
-
 
 .customer.active{
-
     background:#e8f5e9;
-
 }
 
-
-.customer-name{
-
-    font-weight:bold;
-
-}
-
-
-.customer-phone{
-
-    font-size:13px;
-    color:#666;
-
-}
-
-
-.last-message{
-
-    font-size:13px;
-    color:#777;
-    margin-top:5px;
-
-}
-
-
-
-/* Chat */
-
-.chat{
-
-    flex:1;
+.chat-wrapper{
+    height:100vh;
     display:flex;
     flex-direction:column;
-
 }
-
 
 .chat-header{
-
-    background:white;
-    padding:18px;
+    background:#fff;
     border-bottom:1px solid #ddd;
-
+    padding:18px;
 }
-
 
 .messages{
-
     flex:1;
     overflow-y:auto;
-    padding:25px;
-
+    padding:20px;
 }
 
-
-
-/* Messages */
-
-
-.message-wrapper{
-
+.message-row{
     display:flex;
-    margin-bottom:15px;
-
+    margin-bottom:12px;
 }
 
-
-.message-wrapper.incoming{
-
+.message-row.incoming{
     justify-content:flex-start;
-
 }
 
-
-.message-wrapper.outgoing{
-
+.message-row.outgoing{
     justify-content:flex-end;
-
 }
 
-
-
-.message{
-
+.bubble{
     max-width:70%;
-    padding:12px 15px;
+    padding:12px;
     border-radius:10px;
-    box-shadow:0 1px 2px rgba(0,0,0,.1);
-
+    box-shadow:0 1px 2px rgba(0,0,0,.15);
 }
 
-
-
-.incoming .message{
-
-    background:white;
-
+.incoming .bubble{
+    background:#fff;
 }
 
-
-.outgoing .message{
-
+.outgoing .bubble{
     background:#dcf8c6;
-
 }
-
-
 
 .time{
-
+    margin-top:6px;
     font-size:11px;
     color:#777;
-    margin-top:6px;
-
 }
 
-
-
-/* Empty */
-
-.empty{
-
-    height:100%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:#777;
-    font-size:22px;
-
+.composer{
+    background:#fff;
+    border-top:1px solid #ddd;
+    padding:15px;
 }
-
 
 </style>
 
 </head>
 
-
 <body>
 
+<div class="container-fluid">
 
-<div class="support-container">
+<div class="row">
 
+<div class="col-md-3 sidebar">
 
-<!-- Sidebar -->
-
-<div class="sidebar">
-
-
-<div class="sidebar-header">
-
-<h4 class="mb-0">
-
-<i class="bi bi-whatsapp"></i>
+<h4 class="p-3 bg-success text-white mb-0">
 
 Customers
 
 </h4>
 
-</div>
-
-
-
-<div class="p-3">
-
-<input 
-type="text"
-class="form-control"
-placeholder="Search customers..."
->
-
-</div>
-
-
-
-@forelse($customers as $item)
-
+@foreach($customers as $item)
 
 <a
 href="{{ route('support.show',$item->id) }}"
-class="customer {{ isset($customer) && $customer->id == $item->id ? 'active' : '' }}"
+class="customer {{ isset($customer) && $customer->id==$item->id ? 'active' : '' }}"
 >
 
-
-<div class="customer-name">
+<strong>
 
 {{ $item->first_name ?: 'WhatsApp User' }}
 
-</div>
+</strong>
 
+<br>
 
-<div class="customer-phone">
+<small>
 
 {{ $item->phone }}
 
-</div>
-
-
-@if($item->messages->count())
-
-<div class="last-message">
-
-{{ Str::limit($item->messages->last()->message,40) }}
-
-</div>
-
-@endif
-
+</small>
 
 </a>
 
-
-@empty
-
-
-<div class="p-3 text-muted">
-
-No customers found.
+@endforeach
 
 </div>
 
-
-@endforelse
-
-
-
-</div>
-
-
-
-<!-- Chat Area -->
-
-
-<div class="chat">
-
+<div class="col-md-9 p-0">
 
 @if(isset($customer))
 
+<div class="chat-wrapper">
 
 <div class="chat-header">
-
 
 <h5 class="mb-1">
 
@@ -325,36 +162,23 @@ No customers found.
 
 </h5>
 
-
-<div class="text-muted">
+<small>
 
 {{ $customer->phone }}
 
+</small>
+
 </div>
-
-
-</div>
-
-
 
 <div class="messages">
 
-
 @forelse($messages as $message)
 
+<div class="message-row {{ $message->direction }}">
 
-<div class="message-wrapper {{ $message->direction }}">
-
-
-<div class="message">
-
-
-<div>
+<div class="bubble">
 
 {{ $message->message }}
-
-</div>
-
 
 <div class="time">
 
@@ -362,51 +186,87 @@ No customers found.
 
 </div>
 
-
 </div>
 
-
 </div>
-
-
 
 @empty
 
-
-<div class="empty">
-
 No conversation yet.
-
-</div>
-
 
 @endforelse
 
-
-
 </div>
 
+<div class="composer">
 
+@if(session('error'))
 
-@else
+<div class="alert alert-danger">
 
-
-<div class="empty">
-
-Select a customer
+{{ session('error') }}
 
 </div>
-
 
 @endif
 
+<form
+method="POST"
+action="{{ route('support.reply',$customer->id) }}"
+>
 
+@csrf
+
+<div class="input-group">
+
+<input
+type="text"
+name="message"
+class="form-control"
+placeholder="Type your message..."
+required
+maxlength="4096"
+>
+
+<button
+class="btn btn-success"
+type="submit"
+>
+
+Send
+
+</button>
 
 </div>
 
+</form>
 
 </div>
 
+</div>
+
+@else
+
+<div
+class="d-flex justify-content-center align-items-center"
+style="height:100vh;"
+>
+
+<h3 class="text-muted">
+
+Select a customer
+
+</h3>
+
+</div>
+
+@endif
+
+</div>
+
+</div>
+
+</div>
 
 </body>
 
