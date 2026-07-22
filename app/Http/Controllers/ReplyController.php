@@ -25,34 +25,39 @@ class ReplyController extends Controller
             ],
         ]);
 
-        $result = $whatsapp->sendText(
+
+        $response = $whatsapp->sendMessage(
             $customer->phone,
             $request->message
         );
 
-        if (! $result['success']) {
 
-            $errorMessage = data_get(
-                $result,
-                'body.error.message',
-                'Unknown WhatsApp API error.'
-            );
+        if (!$response) {
 
             return redirect()
                 ->route('support.show', $customer)
                 ->withInput()
                 ->with(
                     'error',
-                    "WhatsApp Error ({$result['status']}): {$errorMessage}"
+                    'WhatsApp message failed.'
                 );
         }
 
 
         Message::create([
-            'customer_id'   => $customer->id,
-            'wa_message_id' => $result['message_id'],
-            'direction'     => 'outgoing',
-            'message'       => $request->message,
+            'customer_id' => $customer->id,
+
+            'wa_message_id' =>
+                data_get(
+                    $response,
+                    'messages.0.id'
+                ),
+
+            'direction' => 'outgoing',
+
+            'message' => $request->message,
+
+            'is_read' => true,
         ]);
 
 
@@ -63,6 +68,7 @@ class ReplyController extends Controller
                 'Message sent successfully.'
             );
     }
+
 
 
     /**
@@ -82,44 +88,61 @@ class ReplyController extends Controller
         ]);
 
 
-        $result = $whatsapp->sendText(
+        $response = $whatsapp->sendMessage(
             $customer->phone,
             $request->message
         );
 
 
-        if (! $result['success']) {
+        if (!$response) {
 
             return response()->json([
                 'success' => false,
-                'status' => $result['status'],
-                'error' => data_get(
-                    $result,
-                    'body.error.message',
-                    'Unknown WhatsApp API error.'
-                ),
+                'error' => 'WhatsApp message failed.',
             ], 400);
 
         }
 
 
+
         $message = Message::create([
-            'customer_id'   => $customer->id,
-            'wa_message_id' => $result['message_id'],
-            'direction'     => 'outgoing',
-            'message'       => $request->message,
+
+            'customer_id' => $customer->id,
+
+            'wa_message_id' =>
+                data_get(
+                    $response,
+                    'messages.0.id'
+                ),
+
+            'direction' => 'outgoing',
+
+            'message' => $request->message,
+
+            'is_read' => true,
+
         ]);
 
 
+
         return response()->json([
+
             'success' => true,
 
             'message' => [
+
                 'id' => $message->id,
+
                 'text' => $message->message,
+
                 'direction' => $message->direction,
-                'created_at' => $message->created_at->format('d M Y H:i'),
+
+                'created_at' =>
+                    $message->created_at
+                        ->format('d M Y H:i'),
+
             ],
+
         ]);
     }
 }
