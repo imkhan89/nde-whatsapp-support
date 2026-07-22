@@ -7,37 +7,85 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsAppService
 {
-    public function sendText(string $to, string $message): array
-    {
-        $url = sprintf(
-            'https://graph.facebook.com/%s/%s/messages',
-            config('whatsapp.api_version'),
-            config('whatsapp.phone_number_id')
-        );
+    public function sendMessage(
+        string $phone,
+        string $message
+    ): ?array {
 
-        $response = Http::withToken(config('whatsapp.access_token'))
-            ->post($url, [
-                'messaging_product' => 'whatsapp',
-                'to' => $to,
-                'type' => 'text',
-                'text' => [
-                    'preview_url' => false,
-                    'body' => $message,
-                ],
-            ]);
+        try {
 
-        $data = $response->json();
+            if (empty($phone)) {
+                Log::warning(
+                    'WhatsApp message skipped: empty phone number'
+                );
 
-        Log::info('WhatsApp send response', [
-            'to' => $to,
-            'response' => $data,
-        ]);
+                return null;
+            }
 
-        return [
-            'success' => $response->successful(),
-            'status' => $response->status(),
-            'message_id' => data_get($data, 'messages.0.id'),
-            'body' => $data,
-        ];
+
+            $version = config('whatsapp.api_version');
+
+            $phoneNumberId = config(
+                'whatsapp.phone_number_id'
+            );
+
+
+            $response = Http::withToken(
+                config('whatsapp.access_token')
+            )
+            ->post(
+                "https://graph.facebook.com/{$version}/{$phoneNumberId}/messages",
+                [
+                    'messaging_product' => 'whatsapp',
+
+                    'recipient_type' => 'individual',
+
+                    'to' => $phone,
+
+                    'type' => 'text',
+
+                    'text' => [
+                        'preview_url' => false,
+
+                        'body' => $message,
+                    ],
+                ]
+            );
+
+
+            if (!$response->successful()) {
+
+                Log::error(
+                    'WhatsApp API request failed',
+                    [
+                        'status' =>
+                            $response->status(),
+
+                        'response' =>
+                            $response->json(),
+                    ]
+                );
+
+                return null;
+            }
+
+
+            return $response->json();
+
+
+        } catch (\Throwable $e) {
+
+
+            Log::error(
+                'WhatsApp send exception',
+                [
+                    'error' =>
+                        $e->getMessage(),
+                ]
+            );
+
+
+            return null;
+        }
     }
 }
