@@ -173,6 +173,17 @@ class="customer {{ isset($customer) && $customer->id == $item->id ? 'active' : '
 </small>
 
 
+@if($item->unread_count > 0)
+
+<span class="badge bg-primary float-end">
+
+{{ $item->unread_count }}
+
+</span>
+
+@endif
+
+
 
 @if(
     $item->messages->count() &&

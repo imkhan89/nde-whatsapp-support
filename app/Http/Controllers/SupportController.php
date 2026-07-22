@@ -13,6 +13,12 @@ class SupportController extends Controller
                     $query->latest();
                 }
             ])
+            ->withCount([
+                'messages as unread_count' => function ($query) {
+                    $query->where('direction', 'incoming')
+                          ->where('is_read', false);
+                }
+            ])
             ->orderBy('updated_at', 'desc')
             ->get();
 
@@ -23,9 +29,24 @@ class SupportController extends Controller
 
     public function show(Customer $customer)
     {
+        // Mark incoming messages as read when opened
+        $customer->messages()
+            ->where('direction', 'incoming')
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true
+            ]);
+
+
         $customers = Customer::with([
                 'messages' => function ($query) {
                     $query->latest();
+                }
+            ])
+            ->withCount([
+                'messages as unread_count' => function ($query) {
+                    $query->where('direction', 'incoming')
+                          ->where('is_read', false);
                 }
             ])
             ->orderBy('updated_at', 'desc')
@@ -45,9 +66,6 @@ class SupportController extends Controller
     }
 
 
-    /**
-     * AJAX message refresh endpoint
-     */
     public function messages(Customer $customer)
     {
         $messages = $customer->messages()

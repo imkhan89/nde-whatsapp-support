@@ -49,7 +49,7 @@ class WhatsAppWebhookController extends Controller
                 ]);
             }
 
-            $waMessage = $value['messages'][0];
+            foreach ($value['messages'] as $waMessage)
             $contact = $value['contacts'][0] ?? [];
 
             $customer = Customer::firstOrCreate(
@@ -69,7 +69,8 @@ class WhatsAppWebhookController extends Controller
                 'wa_message_id' => $waMessage['id'],
                 'direction'     => 'incoming',
                 'message'       => data_get($waMessage, 'text.body', ''),
-            ]);
+                'is_read'       => false,
+                ]);
 
             return response()->json([
                 'success' => true,

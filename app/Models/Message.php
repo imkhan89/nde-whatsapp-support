@@ -12,6 +12,11 @@ class Message extends Model
         'wa_message_id',
         'direction',
         'message',
+        'is_read',
+    ];
+
+    protected $casts = [
+        'is_read' => 'boolean',
     ];
 
     public function customer(): BelongsTo
